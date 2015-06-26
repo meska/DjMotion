@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.conf import settings
 from base64 import b64decode,b64encode
 from PIL import Image
-import urllib, cStringIO
+import cStringIO
 import logging
 from datetime import datetime
 from django.core.cache import cache

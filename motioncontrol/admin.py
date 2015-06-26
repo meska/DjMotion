@@ -1,5 +1,5 @@
 from django.contrib import admin
-from motioncontrol.models import Server,Cam,ConfigValue,Event
+from motioncontrol.models import *
 # Register your models here.
 
 class ConfigValueAdmin(admin.ModelAdmin):

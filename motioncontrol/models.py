@@ -2,7 +2,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib import messages
-import urllib, cStringIO
+import cStringIO,requests
 from django.template.defaultfilters import slugify
 from django.core.cache import cache
 from django.conf import settings
@@ -12,6 +12,8 @@ from time import sleep
 import redis
 import logging,os,sys
 import json
+from urllib import quote
+from urlparse import urljoin,urlsplit
 #logger = logging.getLogger(__name__)
 
 # Create your models here.
@@ -23,8 +25,8 @@ class Server(models.Model):
     remote_data_folder = models.CharField(max_length=200,null=True,blank=True,help_text='Use if motion server on different system')
     
     
-    class Meta:
-        app_label = 'motioncontrol'
+    #class Meta:
+        #app_label = 'motioncontrol'
 
     
     def __unicode__(self):
@@ -33,33 +35,35 @@ class Server(models.Model):
     def getVal(self,name):
         try:   
             out = ""
-            res = urllib.urlopen(urllib.basejoin(self.admin_url,'0/config/get?query=%s' % (name))).readlines()[0:-1]
+            res = requests.get(urljoin(self.admin_url,'0/config/get?query=%s' % (name))).text.splitlines()[0:-1]
             for r in res:
                 out+=r.split(' = ')[1]
                 return out
         except Exception,e:
-            logging.error(e)
+            import inspect
+            logging.error("%s:%s" % (inspect.currentframe().f_back.f_code.co_name,e))
         return ""
     
     def setVal(self,name,val):
         try:
             if not val == self.getVal(name).strip():
-                urllib.urlopen(urllib.basejoin(self.admin_url,'/0/config/set?%s=%s' % (name,urllib.quote(val)))).read()
-                # write ( Ex. http://motionhost.mydomain.tld:port/2/config/writeyes )
-                res = urllib.urlopen(urllib.basejoin(self.admin_url,'/0/config/writeyes')).read()
-                # restart ( http://motionhost.mydomain.tld:port/2/action/restart )
-                # res = urllib.urlopen(urllib.basejoin(self.server.admin_url,'/0/action/restart')).read()
+                r = requests.get(urljoin(self.admin_url,'0/config/set'),params={name:quote(val)})
+                if r.text.splitlines()[-1] == 'Done':
+                    r = requests.get(urljoin(self.admin_url,'0/config/writeyes'))
+                
         except Exception,e:
-            logging.error(e)
+            import inspect
+            logging.error("%s:%s" % (inspect.currentframe().f_back.f_code.co_name,e))
             return False
         
         return self.getVal(name)    
     
     def restart(self):
         try:
-            res = urllib.urlopen(urllib.basejoin(self.admin_url,'/0/action/restart')).read()
+            res = requests.get(urljoin(self.server.admin_url,'/0/action/restart')) 
         except Exception,e:
-            logging.error(e)
+            import inspect
+            logging.error("%s:%s" % (inspect.currentframe().f_back.f_code.co_name,e))
             return False
 
         return res
@@ -72,21 +76,17 @@ class Server(models.Model):
     def cams(self):
         try:
             out = []
-            res = urllib.urlopen(self.admin_url).readlines()[2:] # omit first thread
+            res = requests.get(self.admin_url).text.splitlines()[2:]
             for r in res:
                 c = Cam.objects.get_or_create(server=self,thread_number=int(r.strip()))[0]
                 out.append(c)
                 if not c.name:
                     c.save()
 
-                
-#            out = map((
-#                lambda c: Cam.objects.get_or_create(server=self,thread_number=int(c.strip()))[0]
-#                ), res)
-            #cache.set("cams-%s" %(slugify(self.name)),out)
             return out
         except Exception,e:
-            logging.error(e.message)
+            import inspect
+            logging.error("%s:%s" % (inspect.currentframe().f_back.f_code.co_name,e))
         return []    
     
     
@@ -97,8 +97,9 @@ class Cam(models.Model):
     thread_number = models.IntegerField(null=True,blank=True)
     output_pictures = models.BooleanField(default=True)
     online = models.BooleanField(default=True)
-    class Meta:
-        app_label = 'motioncontrol'
+
+    #class Meta:
+    #    app_label = 'motioncontrol'
 
     
     def __unicode__(self):
@@ -107,34 +108,38 @@ class Cam(models.Model):
     def getVal(self,name):
         try:   
             out = ""
-            res = urllib.urlopen(urllib.basejoin(self.server.admin_url,'%s/config/get?query=%s' % (self.thread_number,name))).readlines()[0:-1]
+            res = requests.get('%s%s/config/get?query=%s' % (self.server.admin_url,self.thread_number,name)).text.splitlines()[0:-1]
             for r in res:
                 out+=r.split(' = ')[1]
                 return out
         except Exception,e:
-            logging.error(e)
+            import inspect
+            logging.error("%s:%s" % (inspect.currentframe().f_back.f_code.co_name,e))
         return ""
     
     def setVal(self,name,val,restart=True):
         try:
             if not val == self.getVal(name).strip():
-                urllib.urlopen(urllib.basejoin(self.server.admin_url,'/%s/config/set?%s=%s' % (self.thread_number,name,urllib.quote(val)))).read()
-                # write ( Ex. http://motionhost.mydomain.tld:port/2/config/writeyes )
-                res = urllib.urlopen(urllib.basejoin(self.server.admin_url,'/%s/config/writeyes' % self.thread_number )).read()
-                # restart ( http://motionhost.mydomain.tld:port/2/action/restart )
-                if restart:
-                    res = urllib.urlopen(urllib.basejoin(self.server.admin_url,'/%s/action/restart' % self.thread_number)).read()
+                res = requests.get(urljoin(self.server.admin_url,'/%s/config/set'%self.thread_number),params={name:val})
+                if res.text.splitlines()[-1] == 'Done':
+                    res = requests.get(urljoin(self.server.admin_url,'/%s/config/writeyes' % self.thread_number ))
+                    if res.text.splitlines()[-1] == 'Done':
+                        if restart:
+                            res = requests.get(urljoin(self.server.admin_url,'/%s/action/restart' % self.thread_number))
+
         except Exception,e:
-            logging.error(e)
+            import inspect
+            logging.error("%s:%s" % (inspect.currentframe().f_back.f_code.co_name,e))
             return False
         
         return self.getVal(name)
 
     def restart(self):
         try:
-            res = urllib.urlopen(urllib.basejoin(self.server.admin_url,'/%s/action/restart' % self.thread_number)).read()
+            res = requests.get(urljoin(self.server.admin_url,'/%s/action/restart' % self.thread_number))
         except Exception,e:
-            logging.error(e)
+            import inspect
+            logging.error("%s:%s" % (inspect.currentframe().f_back.f_code.co_name,e))
             return False
         
         return res
@@ -156,7 +161,6 @@ class Cam(models.Model):
             ['on_picture_save','/etc/motion/on_event.py picture '+ self.slug +' %Y%m%d %H%M%S %v %t %f'],
             ['on_camera_lost','/etc/motion/on_event.py lost '+ self.slug +' %Y%m%d %H%M%S'],
             #['on_motion_detected','/etc/motion/on_event.py motion '+ self.slug +' %Y%m%d %H%M%S'],
-            ['on_motion_detected',''],
             ['target_dir',os.path.join(self.server.remote_data_folder,slugify(self.name))]
             ]
         
@@ -166,29 +170,37 @@ class Cam(models.Model):
                     logging.info('Updated %s --> %s' % (e[0],e[1]))
                     self.setVal(e[0],e[1],False)     
             except:
-                logging.error('Erro Updating  %s --> %s' % (e[0],e[1]))
+                logging.error('Error Updating  %s --> %s' % (e[0],e[1]))
         
         self.restart()
 
     def snapshot(self):
 
         port = self.getVal('stream_port').strip()
-        streamurl = "%s:%s/" % (urllib.splitnport(self.server.admin_url)[0] , port)        
+        if not port:
+            img = Image.open(os.path.join(os.path.split(__file__)[0],'static','disconnected.jpg')).resize([640,480])
+            return img 
+        
+        streamurl = "http://%s:%s/" % (urlsplit(self.server.admin_url).hostname,port)     
         
         try:
-            stream=urllib.urlopen(streamurl)
-            bytes=''
-            while True:
-                bytes+=stream.read(1024)
-                a = bytes.find('\xff\xd8')
-                b = bytes.find('\xff\xd9')
+            # get jpeg from mjpeg stream
+            r = requests.get(streamurl,stream=True)
+            data=''
+            for chunk in r.iter_content(chunk_size=1024):
+                data+=chunk
+                a = data.find('\xff\xd8')
+                b = data.find('\xff\xd9')                
                 if a!=-1 and b!=-1:
-                    jpg = bytes[a:b+2]
+                    jpg = data[a:b+2]
                     img = Image.open(cStringIO.StringIO(jpg)).resize([640,480])
-                    return img            
+                    return img                
+        
         except Exception,e:
+            import inspect
+            logging.error("%s:%s" % (inspect.currentframe().f_back.f_code.co_name,e))
+
             img = Image.open(os.path.join(os.path.split(__file__)[0],'static','disconnected.jpg')).resize([640,480])
-            logging.error(e)
             return img
         
     def streamurl(self):
@@ -196,7 +208,7 @@ class Cam(models.Model):
             port = self.getVal('stream_port').strip()
             if not int(port):
                 self.save()
-            return "%s:%s/" % (urllib.splitnport(self.server.admin_url)[0] , port)
+            return "http://%s:%s/" % (urlsplit(self.server.admin_url).hostname,port) 
         else:
             # return disconnected url
             return None   
@@ -210,8 +222,8 @@ class ConfigValue(models.Model):
     value = models.CharField(max_length=255)
     
     
-    class Meta:
-        app_label = 'motioncontrol'
+    #class Meta:
+    #    app_label = 'motioncontrol'
     
     def __unicode__(self):
         return self.name    
@@ -226,7 +238,7 @@ class Event(models.Model):
     filename = models.CharField(max_length=250)
 
     class Meta:
-        app_label = 'motioncontrol'
+        #app_label = 'motioncontrol'
         unique_together = (("cam", "filename"),)
 
     def img(self):
@@ -242,7 +254,8 @@ class Event(models.Model):
             else:
                 return None
         except Exception,e:
-            logging.error(e)
+            import inspect
+            logging.error("%s:%s" % (inspect.currentframe().f_back.f_code.co_name,e))
             return None
         
 @receiver(post_save, sender=Server)

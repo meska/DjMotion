@@ -1,0 +1,58 @@
+Installing notes for ubuntu:
+
+sudo apt-get install git
+sudo apt-get install motion
+sudo apt-get install python-dev
+sudo apt-get install libffi-dev
+sudo apt-get install python-pip
+sudo pip install virtualenv
+cd ~
+git clone https://github.com/meska/DjMotion.git
+cd DjMotion
+virualenv env
+env/bin/pip install pip --upgrade
+env/bin/pip install -r requirements.txt
+
+
+
+# configure nginx
+# https://uwsgi.readthedocs.org/en/latest/tutorials/Django_and_nginx.html
+
+# launch wsgi for test
+env/bin/uwsgi --http :8000 --module djmotion.wsgi
+
+# launch wsgi for nginx 
+uwsgi --ini mysite_uwsgi.ini
+
+======================= example uwsgi.ini ======================
+[uwsgi]
+chdir           = /home/operatore/DjMotion
+module          = djmotion.wsgi
+home            = /home/operatore/DjMotion/env
+master          = true
+processes       = 10
+socket          = /tmp/djmotion.sock 
+chmod-socket    = 666
+vacuum          = true
+================================================================
+
+======================= example nginx config ===================
+upstream django {
+    server unix:///tmp/djmotion.sock;
+}
+server {
+    server_name cam.mecomsrl.com;
+    charset     utf-8;
+    client_max_body_size 75M;                    
+    location /media  {
+        alias /home/operatore/DjMotion/media;
+    }
+    location /static {
+        alias /home/operatore/DjMotion/static;
+    }
+    location / {
+        uwsgi_pass  django;
+        include /home/operatore/DjMotion/djmotion/uwsgi_params;
+    }
+}
+=================================================================

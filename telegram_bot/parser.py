@@ -30,8 +30,8 @@ class Parser():
     
     def getUser(self,message):
         # get or create user from db
-        from telegram_bot.models import User
-        u,created = User.objects.get_or_create(user_id=message['from']['id'])
+        from telegram_bot.models import TelegramUser
+        u,created = TelegramUser.objects.get_or_create(user_id=message['from']['id'])
         save = False
 
         if 'username' in message['from']:
@@ -116,12 +116,12 @@ class Parser():
         self.bot.action_typing(chat_id)
         # carica l'elenco delle telecamere
         from motioncontrol.models import Cam
-        from telegram_bot.models import UserAlert
+        from telegram_bot.models import TelegramUserAlert
         
         keys = []
         for c in Cam.objects.all():
             if c.name:
-                alert,created = UserAlert.objects.get_or_create(user=user,camera=c)
+                alert,created = TelegramUserAlert.objects.get_or_create(user=user,camera=c)
                 if alert.receive_alerts:
                     keys.append(u"%s \U0001f515" % c.name) 
                 else:
@@ -139,7 +139,7 @@ class Parser():
         self.bot.action_typing(chat_id)
 
         c = Cam.objects.get(name=args[0])
-        alert,created = UserAlert.objects.get_or_create(user=user,camera=c)
+        alert,created = TelegramUserAlert.objects.get_or_create(user=user,camera=c)
         if created:
             # attivo
             alert.receive_alerts = True

@@ -17,7 +17,6 @@ DEBUG_GET_POST = False
 ########################################################################
 class Bot:
     """"""
-
     api_url = "https://api.telegram.org"
     #----------------------------------------------------------------------
     def __init__(self,token):
@@ -28,7 +27,8 @@ class Bot:
     def setWebhook(self):
         from django.core.urlresolvers import reverse
         whurl = "%s%s" % (settings.SERVER_URL,reverse('telegram_bot.views.webhook'))
-        #print self.post('setWebhook',{'url':whurl.replace('http:','https:')})
+        r = self.post('setWebhook',{'url':whurl.replace('http:','https:')})
+        print "Telegram WebHook Setup: %s" % r
   
     def get(self,method,params=None):
         

@@ -29,7 +29,7 @@ def parseevent(s):
             cam = Cam.objects.get(slug=data[2])
             cam.online = True
             cam.save()            
-            #for ua in cam.useralert_set.filter(receive_alerts=True):
+            #for ua in cam.TelegramUserAlert_set.filter(receive_alerts=True):
             #    ua.sendAlert(cam,data[1])            
 
         if data[1] == "picture":
@@ -38,28 +38,13 @@ def parseevent(s):
             cam.save()      
             event,created = Event.objects.get_or_create(cam=cam,datetime=datetime.strptime(data[3]+data[4],"%Y%m%d%H%M%S"),event_type=data[5],filename=os.path.split(data[7])[1])    
 
-            for ua in cam.useralert_set.filter(receive_alerts=True):
+            for ua in cam.TelegramUserAlert_set.filter(receive_alerts=True):
                 ua.sendAlert(event,data[1])
             
     except Exception,e:
         print "mc ParseEvent Error: %s" % e
     
 
-def sync_motion_events_DEPRECATED():
-    # sync motion events coming from redis
-    out = []
-    r = redis.StrictRedis(host=settings.REDIS_SERVER, port=6379, db=0)
-    s = r.lpop('motion-event')
-    if s:
-        parseevent(s)
-    while s:
-        s = r.lpop('motion-event')
-        parseevent(s)
-        
-    #repeat
-    Timer(10,sync_motion_events).start()
-    
-    
 def purge_old_pics():
     # cleanup old pictures
     for e in Event.objects.filter(datetime__lt=datetime.now()-timedelta(days=30))[0:100]:
