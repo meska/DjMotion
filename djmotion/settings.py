@@ -39,7 +39,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'motioncontrol',
-    'telegram_bot'
+    'telegrambot'
 )
 
 MIDDLEWARE_CLASSES = (

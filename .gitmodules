@@ -1,6 +1,6 @@
-[submodule "telegram-bot"]
-	path = telegram-bot
-	url = https://github.com/meska/telegram-bot.git
 [submodule "motioncontrol"]
 	path = motioncontrol
 	url = https://github.com/meska/motioncontrol.git
+[submodule "telegrambot"]
+	path = telegrambot
+	url = https://github.com/meska/telegrambot.git

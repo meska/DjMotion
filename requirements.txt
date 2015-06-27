@@ -8,7 +8,6 @@ ipaddress
 ndg-httpsclient
 numpy
 Pillow
-psycopg2
 pyasn1
 pycparser
 pyOpenSSL
