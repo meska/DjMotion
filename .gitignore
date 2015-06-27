@@ -55,3 +55,9 @@ docs/_build/
 
 # PyBuilder
 target/
+.virtualenv
+
+# Mine
+*.wpr
+*.wpu
+.DS_Store
