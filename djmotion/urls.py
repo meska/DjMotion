@@ -19,6 +19,6 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^mc/', include('motioncontrol.urls')),
-    url(r'^tb/', include('telegram-bot.urls')),
+    url(r'^tb/', include('telegrambot.urls')),
     url(r'^$', 'motioncontrol.views.home'),
 ]

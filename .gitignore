@@ -57,8 +57,10 @@ docs/_build/
 # PyBuilder
 target/
 .virtualenv
+
+# mine
 *.wpr
 *.wpu
 djmotion/settings_*
 .DS_Store
-
+*.sqlite
