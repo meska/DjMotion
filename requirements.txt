@@ -11,9 +11,9 @@ Pillow
 pyasn1
 pycparser
 pyOpenSSL
-python-memcached
 redis
 requests[security]
 six
 urllib3
 uWSGI
+django-redis

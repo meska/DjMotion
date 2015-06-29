@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 """
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-import os,sys,socket
+import os,sys,socket,importlib
 from django.template.defaultfilters import slugify
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,12 +21,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'xxxxxxx'
+SECRET_KEY = 'xxxx'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -89,11 +89,18 @@ DATABASES = {
 }
 
 CACHES = {
-    'default':{
-        'BACKEND':'django.core.cache.backends.memcached.MemcachedCache',
-        'LOCATION':'127.0.0.1:11211'
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
     }
-    }
+}
+
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
@@ -113,18 +120,16 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
 
 STATIC_URL = '/static/'
-TEMPLATE_DEBUG = True
-REDIS_SERVER = 'localhost'
-TELEGRAM_BOT_TOKEN = ''
-SERVER_URL = ''
+TEMPLATE_DEBUG = DEBUG
 
 
 #load local settings
-local_settings_file = "settings_%s" % slugify(socket.gethostname())
+local_settings_file = ".settings_%s" % slugify(socket.gethostname())
 try:
-    local_settings = __import__(local_settings_file, globals(), locals(), ['*'])
+    local_settings = importlib.import_module(local_settings_file,'djmotion')
+    #local_settings = __import__(local_settings_file, globals(), locals(), ['*'])
     for k in dir(local_settings):
         locals()[k] = getattr(local_settings, k)
 except:
-    print "Missing Settings, add file %s.py with your custom settings" % local_settings_file
+    print("Missing Settings, add file %s.py with your custom settings" % local_settings_file)
     sys.exit()
