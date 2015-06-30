@@ -130,6 +130,6 @@ try:
     #local_settings = __import__(local_settings_file, globals(), locals(), ['*'])
     for k in dir(local_settings):
         locals()[k] = getattr(local_settings, k)
-except:
+except Exception as e:
     print("Missing Settings, add file %s.py with your custom settings" % local_settings_file)
     sys.exit()
