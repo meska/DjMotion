@@ -64,3 +64,5 @@ target/
 djmotion/settings_*
 .DS_Store
 *.sqlite
+fabfile.py
+
