@@ -15,10 +15,14 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
+from django.contrib.auth import views as auth_views 
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^mc/', include('motioncontrol.urls')),
     url(r'^tb/', include('telegrambot.urls')),
+    url(r'^accounts/login/$', auth_views.login,{'template_name':'login.jade'}),
+    url(r'^accounts/logout/$', auth_views.logout),
+    #url(r'^accounts/', include('django.contrib.auth.urls')),
     url(r'^$', 'motioncontrol.views.home'),
 ]

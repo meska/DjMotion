@@ -17,3 +17,5 @@ six
 urllib3
 uWSGI
 django-redis
+git+https://github.com/syrusakbary/pyjade.git
+

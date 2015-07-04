@@ -1,0 +1,38 @@
+extend base.jade
+
+block css
+    style.
+        body {
+            padding-top: 40px;
+            padding-bottom: 40px;
+        }
+
+        .login {
+            max-width: 330px;
+            padding: 15px;
+            margin: 0 auto;
+        }
+
+block content 
+
+    .container.login
+        if form.errors
+            h4 Login o password errati, riprova
+
+        if next
+            if user.is_authenticated
+                h4 Il tuo account non ha i permessi per questa pagina, utilizzare un altro account.
+            else
+                h4 Inserisci login e password per continuare
+
+        form(method="post" action='{% url "django.contrib.auth.views.login" %}').form-sigin
+            - csrf_token
+            input(type="hidden", name="next", value=next)
+            div.form-group
+                != form.username.label_tag
+                != form.username
+            div.form-group
+                != form.password.label_tag
+                != form.password
+            button.btn.btn-primary(type="submit", value="login") Login
+        
